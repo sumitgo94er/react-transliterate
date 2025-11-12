@@ -1,0 +1,23 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Transliterate from '../components/Transliterate.astro';
+---
+
+<Layout title="Astro Transliterate Demo">
+  <main>
+    <h1>Astro Transliterate</h1>
+    <p>
+      This is a demo of the Astro Transliterate component. Type in the input
+      below to see transliteration suggestions.
+    </p>
+    <Transliterate lang="hi" />
+  </main>
+</Layout>
+
+<style>
+  main {
+    margin: auto;
+    padding: 1.5rem;
+    max-width: 60ch;
+  }
+</style>
