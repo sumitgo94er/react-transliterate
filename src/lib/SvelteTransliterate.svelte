@@ -184,6 +184,48 @@
     }
     onBlur(event);
   };
+
+  const handleClick = (event: MouseEvent) => {
+    const target = event.target as HTMLInputElement;
+    const caret = getInputSelection(target).end;
+
+    if (!shouldRenderSuggestions) {
+      return;
+    }
+
+    const indexOfLastSpace =
+      value.lastIndexOf(' ', caret - 1) < value.lastIndexOf('\n', caret - 1)
+        ? value.lastIndexOf('\n', caret - 1)
+        : value.lastIndexOf(' ', caret - 1);
+
+    let indexOfNextSpace = value.indexOf(' ', caret);
+    if (indexOfNextSpace === -1) {
+      indexOfNextSpace = value.length;
+    }
+
+    matchStart = indexOfLastSpace + 1;
+    matchEnd = indexOfNextSpace - 1;
+
+    const currentWord = value.slice(matchStart, indexOfNextSpace);
+
+    if (currentWord && enabled) {
+      renderSuggestions(currentWord);
+
+      const caretPos = getCaretCoordinates(inputRef, caret);
+      const rect = inputRef.getBoundingClientRect();
+
+      const newLeft = Math.min(
+        caretPos.left,
+        rect.width - 100 / 2, // OPTION_LIST_MIN_WIDTH
+      );
+      const newTop = Math.min(caretPos.top + 10, rect.height); // OPTION_LIST_Y_OFFSET
+
+      left = newLeft;
+      top = newTop;
+    } else {
+      reset();
+    }
+  };
 </script>
 
 <div
@@ -201,6 +243,7 @@
     on:input={handleChange}
     on:keydown={handleKeyDown}
     on:blur={handleBlur}
+    on:click={handleClick}
     data-testid="rt-input-component"
   />
   {#if shouldRenderSuggestions && options.length > 0}
