@@ -37,6 +37,8 @@
   let matchEnd = -1;
   let windowSize = { width: 0, height: 0 };
   let inputRef: HTMLInputElement;
+  const suggestionsCache = new Map<string, string[]>();
+  let selectionInProgress = false;
 
   // Reactive statements (derived state)
   $: shouldRenderSuggestions = hideSuggestionBoxOnMobileDevices
@@ -62,6 +64,7 @@
   };
 
   const handleSelection = (index: number) => {
+    selectionInProgress = true;
     const newValue =
       value.substring(0, matchStart) +
       options[index] +
@@ -70,6 +73,7 @@
 
     setTimeout(() => {
       setCaretPosition(inputRef, matchStart + options[index].length + 1);
+      selectionInProgress = false;
     }, 1);
 
     onChangeText(newValue);
@@ -79,6 +83,10 @@
     // We need to dispatch the event on the input element itself.
     inputRef.value = newValue;
     inputRef.dispatchEvent(event);
+
+    options.forEach(option => {
+      suggestionsCache.set(option, options);
+    });
 
     reset();
     inputRef?.focus();
@@ -105,7 +113,7 @@
     onInput(e);
     onChangeText(value);
 
-    if (!shouldRenderSuggestions) {
+    if (!shouldRenderSuggestions || selectionInProgress) {
       return;
     }
 
@@ -189,10 +197,6 @@
     const target = event.target as HTMLInputElement;
     const caret = getInputSelection(target).end;
 
-    if (!shouldRenderSuggestions) {
-      return;
-    }
-
     const indexOfLastSpace =
       value.lastIndexOf(' ', caret - 1) < value.lastIndexOf('\n', caret - 1)
         ? value.lastIndexOf('\n', caret - 1)
@@ -203,13 +207,12 @@
       indexOfNextSpace = value.length;
     }
 
-    matchStart = indexOfLastSpace + 1;
-    matchEnd = indexOfNextSpace - 1;
+    const currentWord = value.slice(indexOfLastSpace + 1, indexOfNextSpace);
 
-    const currentWord = value.slice(matchStart, indexOfNextSpace);
-
-    if (currentWord && enabled) {
-      renderSuggestions(currentWord);
+    if (suggestionsCache.has(currentWord)) {
+      options = suggestionsCache.get(currentWord) || [];
+      matchStart = indexOfLastSpace + 1;
+      matchEnd = indexOfNextSpace - 1;
 
       const caretPos = getCaretCoordinates(inputRef, caret);
       const rect = inputRef.getBoundingClientRect();
